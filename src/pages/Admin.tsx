@@ -1,11 +1,13 @@
 import { useState } from "react";
 import AdminGate from "@/components/AdminGate";
 import MatchForm from "@/components/MatchForm";
+import MatchManagement from "@/components/MatchManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, RotateCcw, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, RotateCcw, Loader2, Plus, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 const Admin = () => {
@@ -40,7 +42,7 @@ const Admin = () => {
               MOD PANEL
             </h1>
           </div>
-          <p className="text-muted-foreground">Nhập kết quả trận đấu</p>
+          <p className="text-muted-foreground">Quản lý trận đấu VCG</p>
         </div>
 
         <div className="card-gaming p-6 space-y-6">
@@ -55,13 +57,32 @@ const Admin = () => {
             />
           </div>
 
-          {modName.trim() ? (
-            <MatchForm moderatorName={modName.trim()} />
-          ) : (
-            <p className="text-center text-muted-foreground text-sm py-4">
-              Vui lòng nhập tên moderator để bắt đầu
-            </p>
-          )}
+          <Tabs defaultValue="add" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-secondary">
+              <TabsTrigger value="add" className="font-gaming text-xs">
+                <Plus className="h-3 w-3 mr-1" />
+                THÊM TRẬN
+              </TabsTrigger>
+              <TabsTrigger value="manage" className="font-gaming text-xs">
+                <Settings className="h-3 w-3 mr-1" />
+                QUẢN LÝ
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="add" className="mt-4">
+              {modName.trim() ? (
+                <MatchForm moderatorName={modName.trim()} />
+              ) : (
+                <p className="text-center text-muted-foreground text-sm py-8">
+                  Vui lòng nhập tên moderator để bắt đầu
+                </p>
+              )}
+            </TabsContent>
+
+            <TabsContent value="manage" className="mt-4">
+              <MatchManagement />
+            </TabsContent>
+          </Tabs>
 
           <div className="border-t border-border pt-4">
             <Button
