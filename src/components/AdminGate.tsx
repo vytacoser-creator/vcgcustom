@@ -2,61 +2,55 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Lock, Loader2, User, LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Shield, Lock, User, LogOut } from "lucide-react";
+
+// Password check - for basic protection
+// RLS policies on Supabase still protect the database
+const ADMIN_PASSWORD = "vcg2024admin";
 
 interface AdminGateProps {
   children: React.ReactNode;
+  onModNameChange?: (name: string) => void;
 }
 
-const AdminGate = ({ children }: AdminGateProps) => {
-  const { user, isModerator, isLoading, signIn, signOut, displayName } = useAuth();
+const AdminGate = ({ children, onModNameChange }: AdminGateProps) => {
+  const [authenticated, setAuthenticated] = useState(
+    () => sessionStorage.getItem("vcg-admin") === "true"
+  );
+  const [modName, setModName] = useState(
+    () => sessionStorage.getItem("vcg-mod-name") || ""
+  );
   const [password, setPassword] = useState("");
-  const [modName, setModName] = useState("");
+  const [tempModName, setTempModName] = useState("");
   const [error, setError] = useState("");
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
-  const handleLogin = async () => {
-    if (!modName.trim()) {
+  const handleLogin = () => {
+    if (!tempModName.trim()) {
       setError("Vui lòng nhập tên moderator");
       return;
     }
-    if (!password.trim()) {
-      setError("Vui lòng nhập mật khẩu");
-      return;
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("vcg-admin", "true");
+      sessionStorage.setItem("vcg-mod-name", tempModName.trim());
+      setModName(tempModName.trim());
+      setAuthenticated(true);
+      setError("");
+      onModNameChange?.(tempModName.trim());
+    } else {
+      setError("Sai mật khẩu!");
     }
-
-    setIsSigningIn(true);
-    setError("");
-
-    const result = await signIn(password, modName.trim());
-    
-    if (result.error) {
-      setError(result.error);
-    }
-    
-    setIsSigningIn(false);
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    setPassword("");
+  const handleLogout = () => {
+    sessionStorage.removeItem("vcg-admin");
+    sessionStorage.removeItem("vcg-mod-name");
+    setAuthenticated(false);
     setModName("");
+    setPassword("");
+    setTempModName("");
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="card-gaming p-8 text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground text-sm mt-4">Đang tải...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // User is authenticated and is a moderator
-  if (user && isModerator) {
+  if (authenticated) {
     return (
       <div className="relative">
         {/* Logout button */}
@@ -71,7 +65,11 @@ const AdminGate = ({ children }: AdminGateProps) => {
             Đăng xuất
           </Button>
         </div>
-        {children}
+        {/* Pass modName to children via context or render prop */}
+        {typeof children === 'function' 
+          ? (children as (modName: string) => React.ReactNode)(modName)
+          : children
+        }
       </div>
     );
   }
@@ -95,12 +93,11 @@ const AdminGate = ({ children }: AdminGateProps) => {
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                value={modName}
-                onChange={(e) => { setModName(e.target.value); setError(""); }}
+                value={tempModName}
+                onChange={(e) => { setTempModName(e.target.value); setError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 placeholder="Nhập tên mod..."
                 className="pl-9 bg-secondary border-border"
-                disabled={isSigningIn}
               />
             </div>
           </div>
@@ -115,29 +112,17 @@ const AdminGate = ({ children }: AdminGateProps) => {
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 placeholder="••••••••"
                 className="pl-9 bg-secondary border-border"
-                disabled={isSigningIn}
               />
             </div>
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
           <Button 
             onClick={handleLogin} 
-            disabled={isSigningIn}
             className="w-full gradient-gaming text-primary-foreground font-gaming"
           >
-            {isSigningIn ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ĐANG XÁC THỰC...
-              </>
-            ) : (
-              "ĐĂNG NHẬP"
-            )}
+            ĐĂNG NHẬP
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          🔒 Xác thực bảo mật qua server
-        </p>
       </div>
     </div>
   );

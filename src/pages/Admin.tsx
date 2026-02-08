@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminGate from "@/components/AdminGate";
 import MatchForm from "@/components/MatchForm";
 import MatchManagement from "@/components/MatchManagement";
@@ -7,13 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, RotateCcw, Loader2, Plus, Settings, User } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Admin = () => {
-  const { displayName } = useAuth();
   const [resetting, setResetting] = useState(false);
+  const [modName, setModName] = useState(() => 
+    sessionStorage.getItem("vcg-mod-name") || "Moderator"
+  );
 
-  const modName = displayName || "Moderator";
+  // Listen for modName changes from sessionStorage
+  useEffect(() => {
+    const checkModName = () => {
+      const name = sessionStorage.getItem("vcg-mod-name");
+      if (name && name !== modName) {
+        setModName(name);
+      }
+    };
+    
+    // Check on mount and when storage changes
+    checkModName();
+    window.addEventListener("storage", checkModName);
+    return () => window.removeEventListener("storage", checkModName);
+  }, [modName]);
 
   const handleResetScores = async () => {
     if (!confirm("Bạn có chắc muốn reset toàn bộ điểm về 0?")) return;
@@ -34,7 +48,7 @@ const Admin = () => {
   };
 
   return (
-    <AdminGate>
+    <AdminGate onModNameChange={setModName}>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-2">
