@@ -22,7 +22,7 @@ interface Player {
   id: string;
   name: string;
   total_score: number;
-  total_wins: number;
+  total_matches: number;
 }
 
 const LeaderboardTable = () => {
@@ -91,8 +91,8 @@ const LeaderboardTable = () => {
 
   const exportCSV = () => {
     const csv = [
-      "Rank,Player,Score,Wins",
-      ...filteredPlayers.map((p, i) => `${i + 1},${p.name},${p.total_score},${p.total_wins}`),
+      "Rank,Player,Score,Matches",
+      ...filteredPlayers.map((p, i) => `${i + 1},${p.name},${p.total_score},${p.total_matches}`),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -308,8 +308,8 @@ const LeaderboardTable = () => {
                   <p className="text-muted-foreground text-xs">điểm</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-foreground">{player.total_wins}</p>
-                  <p className="text-muted-foreground text-xs">thắng</p>
+                  <p className="font-semibold text-foreground">{player.total_matches}</p>
+                  <p className="text-muted-foreground text-xs">trận</p>
                 </div>
                 {/* Delete button - only for admin */}
                 {isAdmin && (

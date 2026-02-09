@@ -53,7 +53,7 @@ export type Database = {
           id: string
           name: string
           total_score: number
-          total_wins: number
+          total_matches: number
           updated_at: string
         }
         Insert: {
@@ -61,7 +61,7 @@ export type Database = {
           id?: string
           name: string
           total_score?: number
-          total_wins?: number
+          total_matches?: number
           updated_at?: string
         }
         Update: {
@@ -69,7 +69,7 @@ export type Database = {
           id?: string
           name?: string
           total_score?: number
-          total_wins?: number
+          total_matches?: number
           updated_at?: string
         }
         Relationships: []

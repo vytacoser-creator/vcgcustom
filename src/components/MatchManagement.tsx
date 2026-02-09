@@ -64,21 +64,23 @@ const MatchManagement = () => {
     setDeleting(match.id);
     try {
       const winners = match.winning_team === 1 ? match.team1_players : match.team2_players;
+      const allPlayers = [...match.team1_players, ...match.team2_players];
 
-      // Decrease score for each winner
-      for (const name of winners) {
+      // Decrease total_matches for ALL players in the match
+      for (const name of allPlayers) {
         const { data: player } = await supabase
           .from("players")
-          .select("id, total_score, total_wins")
+          .select("id, total_score, total_matches")
           .eq("name", name)
           .maybeSingle();
 
         if (player) {
+          const isWinner = winners.includes(name);
           await supabase
             .from("players")
             .update({
-              total_score: Math.max(0, player.total_score - 1),
-              total_wins: Math.max(0, player.total_wins - 1),
+              total_score: Math.max(0, player.total_score - (isWinner ? 1 : 0)),
+              total_matches: Math.max(0, player.total_matches - 1),
             })
             .eq("id", player.id);
         }
@@ -119,24 +121,26 @@ const MatchManagement = () => {
       const oldWinners = editingMatch.winning_team === 1 
         ? editingMatch.team1_players 
         : editingMatch.team2_players;
+      const oldAllPlayers = [...editingMatch.team1_players, ...editingMatch.team2_players];
       const newWinners = parseInt(editWinningTeam) === 1 
         ? editTeam1.map(p => p.trim()) 
         : editTeam2.map(p => p.trim());
 
-      // Reverse old scores
-      for (const name of oldWinners) {
+      // Reverse old scores and matches for ALL old players
+      for (const name of oldAllPlayers) {
         const { data: player } = await supabase
           .from("players")
-          .select("id, total_score, total_wins")
+          .select("id, total_score, total_matches")
           .eq("name", name)
           .maybeSingle();
 
         if (player) {
+          const wasWinner = oldWinners.includes(name);
           await supabase
             .from("players")
             .update({
-              total_score: Math.max(0, player.total_score - 1),
-              total_wins: Math.max(0, player.total_wins - 1),
+              total_score: Math.max(0, player.total_score - (wasWinner ? 1 : 0)),
+              total_matches: Math.max(0, player.total_matches - 1),
             })
             .eq("id", player.id);
         }
@@ -145,7 +149,7 @@ const MatchManagement = () => {
       // Delete old score logs
       await supabase.from("score_logs").delete().eq("match_id", editingMatch.id);
 
-      // Add new scores
+      // Add new scores for ALL new players
       const team1Names = editTeam1.map(p => p.trim());
       const team2Names = editTeam2.map(p => p.trim());
       const allNames = [...new Set([...team1Names, ...team2Names])];
@@ -154,25 +158,23 @@ const MatchManagement = () => {
         const isWinner = newWinners.includes(name);
         const { data: existing } = await supabase
           .from("players")
-          .select("id, total_score, total_wins")
+          .select("id, total_score, total_matches")
           .eq("name", name)
           .maybeSingle();
 
         if (existing) {
-          if (isWinner) {
-            await supabase
-              .from("players")
-              .update({
-                total_score: existing.total_score + 1,
-                total_wins: existing.total_wins + 1,
-              })
-              .eq("id", existing.id);
-          }
+          await supabase
+            .from("players")
+            .update({
+              total_score: existing.total_score + (isWinner ? 1 : 0),
+              total_matches: existing.total_matches + 1,
+            })
+            .eq("id", existing.id);
         } else {
           await supabase.from("players").insert({
             name,
             total_score: isWinner ? 1 : 0,
-            total_wins: isWinner ? 1 : 0,
+            total_matches: 1,
           });
         }
 

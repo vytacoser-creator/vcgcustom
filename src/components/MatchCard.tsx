@@ -1,4 +1,6 @@
-import { Trophy, Clock, User, Gamepad2 } from "lucide-react";
+import { Trophy, Clock, User, Gamepad2, Copy, Check } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface MatchCardProps {
   match: {
@@ -14,12 +16,43 @@ interface MatchCardProps {
 }
 
 const MatchCard = ({ match }: MatchCardProps) => {
+  const [copiedTeam, setCopiedTeam] = useState<"win" | "lose" | "all" | null>(null);
+  
   const winningPlayers = match.winning_team === 1 ? match.team1_players : match.team2_players;
   const losingPlayers = match.winning_team === 1 ? match.team2_players : match.team1_players;
 
   const modeColors: Record<string, string> = {
     "ARAM Hỗn Loạn": "bg-primary/20 text-primary",
     "ARAM Thường": "bg-accent/20 text-accent",
+  };
+
+  const copyTeam = async (players: string[], teamType: "win" | "lose") => {
+    const text = players.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedTeam(teamType);
+      toast.success(`Đã copy ${players.length} người chơi!`);
+      setTimeout(() => setCopiedTeam(null), 2000);
+    } catch {
+      toast.error("Không thể copy!");
+    }
+  };
+
+  const copyAll = async () => {
+    const data = {
+      mode: match.mode,
+      team1: match.team1_players,
+      team2: match.team2_players,
+      winningTeam: match.winning_team.toString(),
+    };
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data));
+      setCopiedTeam("all");
+      toast.success("Đã copy toàn bộ trận đấu!");
+      setTimeout(() => setCopiedTeam(null), 2000);
+    } catch {
+      toast.error("Không thể copy!");
+    }
   };
 
   return (
@@ -46,9 +79,22 @@ const MatchCard = ({ match }: MatchCardProps) => {
       <div className="grid grid-cols-2 gap-3">
         {/* Winning team */}
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1 text-xs font-gaming text-primary">
-            <Trophy className="h-3 w-3" />
-            THẮNG
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-xs font-gaming text-primary">
+              <Trophy className="h-3 w-3" />
+              THẮNG
+            </div>
+            <button
+              onClick={() => copyTeam(winningPlayers, "win")}
+              className="p-1 rounded hover:bg-primary/20 transition-colors"
+              title="Copy team thắng"
+            >
+              {copiedTeam === "win" ? (
+                <Check className="h-3 w-3 text-green-500" />
+              ) : (
+                <Copy className="h-3 w-3 text-muted-foreground hover:text-primary" />
+              )}
+            </button>
           </div>
           <div className="space-y-1">
             {winningPlayers.map((name) => (
@@ -58,7 +104,20 @@ const MatchCard = ({ match }: MatchCardProps) => {
         </div>
         {/* Losing team */}
         <div className="space-y-1.5">
-          <div className="text-xs font-gaming text-muted-foreground">THUA</div>
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-gaming text-muted-foreground">THUA</div>
+            <button
+              onClick={() => copyTeam(losingPlayers, "lose")}
+              className="p-1 rounded hover:bg-muted transition-colors"
+              title="Copy team thua"
+            >
+              {copiedTeam === "lose" ? (
+                <Check className="h-3 w-3 text-green-500" />
+              ) : (
+                <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              )}
+            </button>
+          </div>
           <div className="space-y-1">
             {losingPlayers.map((name) => (
               <p key={name} className="text-sm text-muted-foreground truncate">{name}</p>
@@ -76,12 +135,27 @@ const MatchCard = ({ match }: MatchCardProps) => {
         />
       )}
 
-      <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1 border-t border-border">
-        <User className="h-3 w-3" />
-        Mod: {match.moderator_name}
+      <div className="flex items-center justify-between pt-1 border-t border-border">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <User className="h-3 w-3" />
+          Mod: {match.moderator_name}
+        </div>
+        <button
+          onClick={copyAll}
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-primary/20 transition-colors text-muted-foreground hover:text-primary"
+          title="Copy toàn bộ trận đấu"
+        >
+          {copiedTeam === "all" ? (
+            <Check className="h-3 w-3 text-green-500" />
+          ) : (
+            <Copy className="h-3 w-3" />
+          )}
+          Copy All
+        </button>
       </div>
     </div>
   );
 };
 
 export default MatchCard;
+

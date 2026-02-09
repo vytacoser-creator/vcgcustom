@@ -35,7 +35,7 @@ const Admin = () => {
     try {
       const { error } = await supabase
         .from("players")
-        .update({ total_score: 0, total_wins: 0 })
+        .update({ total_score: 0, total_matches: 0 })
         .gte("total_score", 0);
 
       if (error) throw error;
